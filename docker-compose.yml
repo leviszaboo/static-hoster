@@ -1,0 +1,31 @@
+services:
+  api:
+    build:
+      context: ./api-service
+      target: dev
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./api-service/.env
+    volumes:
+      - ./api-service:/app
+    depends_on:
+      - deployments-db
+
+  deployments-db:
+    image: postgres:15
+    user: postgres
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db:
+    driver: local
