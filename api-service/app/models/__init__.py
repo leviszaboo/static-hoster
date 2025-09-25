@@ -1,1 +1,1 @@
-from app.models.deployment import Deployment
+from .deployment import Deployment

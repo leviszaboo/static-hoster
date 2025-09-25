@@ -1,19 +1,22 @@
+from datetime import datetime
 from uuid import uuid4
 
-from app.common.enums import DeploymentStatus, Routes
-from app.extensions import db
-from app.models import Deployment
-from app.schemas import DeploymentSchema
 from flask import Blueprint, jsonify, request
-from werkzeug.exceptions import BadRequest, NotFound
+from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import BadRequest, Conflict, NotFound
 
-deployments = Blueprint("deployments", __name__)
+from ..common.enums import DeploymentStatus, Routes
+from ..extensions import db
+from ..models import Deployment
+from ..schemas import DeploymentSchema
+
+deployments_bp = Blueprint("deployments", __name__)
 
 create_deployment_schema = DeploymentSchema(only=("name", "github_url"))
 deployment_schema = DeploymentSchema()
 
 
-@deployments.route(Routes.GET_DEPLOYMENT.value, methods=["GET"])
+@deployments_bp.route(Routes.GET_DEPLOYMENT.value, methods=["GET"])
 def get_deployment(deployment_id: str):
     deployment = Deployment.query.get(deployment_id)
 
@@ -23,7 +26,7 @@ def get_deployment(deployment_id: str):
     return jsonify(deployment_schema.dump(deployment))
 
 
-@deployments.route(Routes.CREATE_DEPLOYMENT.value, methods=["POST"])
+@deployments_bp.route(Routes.CREATE_DEPLOYMENT.value, methods=["POST"])
 def create_deployment():
     data = request.get_json()
 
@@ -41,9 +44,20 @@ def create_deployment():
         name=data["name"],
         status=deployment_status,
         url=deployment_url,
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
     )
 
-    db.session.add(deployment)
-    db.session.commit()
+    try:
+        db.session.add(deployment)
+        db.session.commit()
+    except IntegrityError as e:
+        db.session.rollback()
+        if "UNIQUE constraint failed" in str(e) or "duplicate key" in str(e):
+            raise Conflict(
+                description="A deployment with this name or URL already exists"
+            )
+        else:
+            raise BadRequest(description="Database constraint violation")
 
     return jsonify(deployment_schema.dump(deployment)), 201

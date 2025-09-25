@@ -1,1 +1,1 @@
-from app.schemas.deployment import DeploymentSchema
+from .deployment import DeploymentSchema

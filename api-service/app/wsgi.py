@@ -1,6 +1,6 @@
 # wsgi.py
-from app import create_app
-from app.config import ProdConfig
+from . import create_app
+from .config import ProdConfig
 
 app = create_app(config_class=ProdConfig())
 

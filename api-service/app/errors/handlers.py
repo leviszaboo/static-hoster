@@ -17,6 +17,7 @@ def register_error_handlers(app):
 
     @app.errorhandler(Exception)
     def handle_exception(e: Exception):
+        app.logger.exception(e)
         return (
             jsonify(
                 {
