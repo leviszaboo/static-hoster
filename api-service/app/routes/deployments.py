@@ -1,10 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, Conflict, NotFound
 
+from ..celery_client import celery
 from ..common.enums import DeploymentStatus, Routes
 from ..extensions import db
 from ..models import Deployment
@@ -44,8 +45,8 @@ def create_deployment():
         name=data["name"],
         status=deployment_status,
         url=deployment_url,
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
 
     try:
@@ -59,5 +60,7 @@ def create_deployment():
             )
         else:
             raise BadRequest(description="Database constraint violation")
+
+    celery.apply_async(args=[str(deployment.id), deployment.github_url], queue="clone")
 
     return jsonify(deployment_schema.dump(deployment)), 201

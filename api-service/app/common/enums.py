@@ -8,5 +8,5 @@ class DeploymentStatus(Enum):
 
 
 class Routes(Enum):
-    GET_DEPLOYMENT = "/deployments/<uuid:deployment_id>"
-    CREATE_DEPLOYMENT = "/deployments"
+    GET_DEPLOYMENT = "/api/deployments/<uuid:deployment_id>"
+    CREATE_DEPLOYMENT = "/api/deployments"
